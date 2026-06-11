@@ -1,6 +1,5 @@
 """
 CyberShield AI — Streamlit dashboard entry point.
-Milestone 0: skeleton with a live CVE fetch demo.
 """
 
 import streamlit as st
@@ -8,7 +7,7 @@ import pandas as pd
 
 from src.utils.config import load_config
 from src.utils.logger import setup_logger
-from src.ingestion.nvd_client import iter_cves
+from src.ingestion.nvd_client import NVDAPIError, NVDRateLimitError, iter_cves
 from src.ingestion.kev_client import get_kev_cve_ids
 from src.features.cve_parser import parse_cve
 from src.features.feature_engineering import build_features
@@ -44,7 +43,21 @@ if fetch_btn:
             kev_ids = set()
 
     with st.spinner(f"Fetching up to {max_results} CVEs from NVD…"):
-        raw_records = list(iter_cves(keyword=keyword, max_results=max_results))
+        try:
+            raw_records = list(iter_cves(keyword=keyword, max_results=max_results))
+        except NVDRateLimitError as exc:
+            st.error(
+                f"NVD rate limit hit: {exc}\n\n"
+                "Add your free `NVD_API_KEY` to `.env` or wait 30 seconds and retry."
+            )
+            st.stop()
+        except NVDAPIError as exc:
+            st.error(f"NVD API error: {exc}")
+            st.stop()
+
+    if not raw_records:
+        st.warning("NVD returned no results for that query. Try a different keyword.")
+        st.stop()
 
     parsed = [parse_cve(r) for r in raw_records]
     df = build_features(parsed)
@@ -58,10 +71,11 @@ if fetch_btn:
 
     st.subheader(f"Results — {len(df)} CVEs")
 
+    avg_risk = df["risk_score"].mean()
     col1, col2, col3 = st.columns(3)
     col1.metric("Critical", int((df["severity"] == "CRITICAL").sum()))
     col2.metric("In KEV (actively exploited)", int(df["in_kev"].sum()))
-    col3.metric("Avg Risk Score", f"{df['risk_score'].mean():.1f}")
+    col3.metric("Avg Risk Score", f"{avg_risk:.1f}" if pd.notna(avg_risk) else "—")
 
     st.dataframe(
         df[["cve_id", "severity", "base_score", "in_kev", "risk_score",
