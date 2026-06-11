@@ -31,10 +31,11 @@ CISA KEV ──► src/ingestion/kev_client.py  ─┘
 | 0 | Repo scaffold, config, CI, dashboard skeleton | ✅ Done |
 | 1 | Repo hardening — docs, .gitignore, architecture guide | ✅ Done |
 | 2 | Production NVD CVE ingestion — keyword, CVE ID, date range, pagination, error handling | ✅ Done |
-| 3 | ML exploit-likelihood classifier (XGBoost) | 🔜 Next |
-| 4 | NLP description embeddings (sentence-transformers) | Planned |
-| 5 | CVSS trend analysis & time-series plots | Planned |
-| 6 | Docker deployment + GitHub Actions full CI/CD | Planned |
+| 3 | Production CISA KEV ingestion — typed exceptions, full entry metadata, dashboard date filters | ✅ Done |
+| 4 | ML exploit-likelihood classifier (XGBoost) | 🔜 Next |
+| 5 | NLP description embeddings (sentence-transformers) | Planned |
+| 6 | CVSS trend analysis & time-series plots | Planned |
+| 7 | Docker deployment + GitHub Actions full CI/CD | Planned |
 
 ---
 

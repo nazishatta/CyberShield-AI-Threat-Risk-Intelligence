@@ -54,6 +54,46 @@ CISA KEV lists CVEs that have been **actively exploited in the wild**.
 Being on the KEV list is a strong predictor of real-world threat — far more so than CVSS score alone.
 In our model, KEV membership adds 20 points to the rule-based risk score and provides the `exploited=1` label for ML training.
 
+### KEV entry fields
+
+Each entry in the catalogue contains:
+
+| Field | Example value | Notes |
+|---|---|---|
+| `cveID` | `CVE-2021-44228` | Primary join key with NVD data |
+| `vendorProject` | `Apache` | Affected vendor |
+| `product` | `Log4j` | Affected product |
+| `vulnerabilityName` | `Apache Log4j2 RCE Vulnerability` | Human-readable name |
+| `dateAdded` | `2021-12-10` | Date CISA added the CVE to KEV |
+| `shortDescription` | `...` | Brief description |
+| `requiredAction` | `Apply updates...` | CISA's recommended mitigation |
+| `dueDate` | `2021-12-24` | Federal agency patching deadline |
+| `notes` | `""` | Additional notes |
+
+### Storage-light CISA KEV ingestion strategy
+
+Unlike NVD (which requires pagination), the KEV catalogue arrives as a **single JSON response** (~2 MB).
+CyberShield AI loads it entirely in memory and never writes it to disk.
+
+```
+Single HTTP GET → ~2 MB JSON → Python dict → set[str] of CVE IDs (in memory only)
+```
+
+Key design decisions:
+
+- **One request per analysis run** — the catalogue is fetched fresh each time the user clicks *Fetch & Analyse*, so it is always current.
+- **Set for O(1) lookups** — `get_kev_cve_ids()` returns a `set[str]` so that cross-referencing thousands of NVD results is instant.
+- **Full entries available** — `get_kev_entries()` returns the complete list of entry dicts when richer metadata (vendor, product, dueDate) is needed in future milestones.
+- **Typed exceptions** — `CISAKEVError` wraps all failure modes (404 URL drift, network timeout, bad JSON) so callers can show user-friendly messages without crashing.
+
+### Error classes
+
+| Exception | When raised |
+|---|---|
+| `CISAKEVError` | HTTP 404 (URL changed), any other HTTP error, network failure, malformed JSON |
+
+The dashboard catches `CISAKEVError` and falls back gracefully: results are still shown using CVSS data, with a warning that KEV overlay is unavailable.
+
 ---
 
 ## Storage-light NVD ingestion strategy
@@ -129,6 +169,5 @@ All data is fetched live at runtime.
 
 | Source | Milestone | What it adds |
 |---|---|---|
-| Exploit-DB / ExploitDB API | M3 | Public exploit code availability |
-| Shodan InternetDB | M3 | Exposed service counts per CVE technology |
 | MITRE ATT&CK STIX | M4 | Tactic/technique mapping for CVEs |
+| Shodan InternetDB | M5 | Exposed service counts per CVE technology |
