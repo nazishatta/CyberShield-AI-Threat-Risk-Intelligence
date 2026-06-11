@@ -11,7 +11,6 @@ from src.features.cve_parser import parse_cve
 from src.features.feature_engineering import build_features
 from src.ingestion.kev_client import CISAKEVError, get_kev_cve_ids
 from src.ingestion.nvd_client import NVDAPIError, NVDRateLimitError, iter_cves
-from src.models.risk_scorer import score
 from src.utils.config import load_config
 from src.utils.logger import setup_logger
 
@@ -106,8 +105,8 @@ if fetch_btn:
             ))
         except NVDRateLimitError as exc:
             st.error(
-                f"NVD rate limit hit (HTTP 403).\n\n"
-                f"Add your free `NVD_API_KEY` to `.env`, or wait 30 s and retry.\n\n"
+                "NVD rate limit hit (HTTP 403).\n\n"
+                "Add your free `NVD_API_KEY` to `.env`, or wait 30 s and retry.\n\n"
                 f"Detail: {exc}"
             )
             st.stop()
@@ -122,17 +121,12 @@ if fetch_btn:
         )
         st.stop()
 
-    # Step 3 — parse, feature-engineer, score
+    # Step 3 — parse → feature-engineer (includes KEV overlay and risk score)
     parsed = [parse_cve(r) for r in raw_records]
-    df = build_features(parsed)
-
-    df["in_kev"] = df["cve_id"].isin(kev_ids)
-    df["risk_score"] = df.apply(
-        lambda row: score(row.to_dict(), is_kev=row["in_kev"]), axis=1
-    )
+    df = build_features(parsed, kev_ids=kev_ids)
     df.sort_values("risk_score", ascending=False, inplace=True)
 
-    # Step 4 — display
+    # Step 4 — summary metrics
     st.subheader(f"Results — {len(df)} CVEs")
 
     avg_risk = df["risk_score"].mean()
@@ -141,15 +135,77 @@ if fetch_btn:
     col2.metric("In KEV (actively exploited)", int(df["in_kev"].sum()))
     col3.metric("Avg Risk Score", f"{avg_risk:.1f}" if pd.notna(avg_risk) else "—")
 
+    # Step 5 — risk score disclaimer
+    with st.expander("ℹ️ About the risk score"):
+        st.markdown(
+            """
+            **The risk score is a defensive prioritisation tool — it is not proof
+            of exploitability.**
+
+            It is computed from three public data sources:
+
+            | Component | Source | Weight |
+            |---|---|---|
+            | CVSS base score (0–10) | NVD CVE metrics | Foundation |
+            | Severity × attack-vector multiplier | NVD CVSS metadata | Adjusts score up/down |
+            | CISA KEV membership | CISA Known Exploited Vulnerabilities catalogue | +20 bonus points |
+
+            A high score means the vulnerability has characteristics that are
+            *commonly associated* with high-impact or actively-targeted issues —
+            it does **not** mean your specific environment is affected or that
+            exploitation is imminent.
+
+            Use this score alongside your own asset inventory, patch management
+            process, and threat intelligence before making remediation decisions.
+            """
+        )
+
+    # Step 6 — results table (human-readable columns)
     st.dataframe(
         df[[
-            "cve_id", "severity", "base_score", "in_kev",
-            "risk_score", "attack_vector", "cwe", "published",
-        ]],
+            "cve_id",
+            "severity",
+            "base_score",
+            "age_days",
+            "attack_vector",
+            "cwe",
+            "in_kev",
+            "risk_score",
+        ]].rename(columns={
+            "cve_id": "CVE ID",
+            "severity": "Severity",
+            "base_score": "CVSS Score",
+            "age_days": "Age (days)",
+            "attack_vector": "Attack Vector",
+            "cwe": "CWE",
+            "in_kev": "In KEV",
+            "risk_score": "Risk Score",
+        }),
         use_container_width=True,
         hide_index=True,
     )
 
+    # Step 7 — ML features expander (numeric columns for data scientists)
+    with st.expander("🔬 Normalized ML features"):
+        st.caption(
+            "Numeric-encoded columns used as model inputs. "
+            "severity_numeric: CRITICAL=4 HIGH=3 MEDIUM=2 LOW=1 UNKNOWN=0. "
+            "attack_vector_numeric: NETWORK=4 ADJACENT=3 LOCAL=2 PHYSICAL=1 UNKNOWN=0."
+        )
+        st.dataframe(
+            df[[
+                "cve_id",
+                "severity_numeric",
+                "attack_vector_numeric",
+                "age_days",
+                "kev_numeric",
+                "risk_score",
+            ]],
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    # Step 8 — chart
     if len(df) > 1:
         st.subheader("Risk Score Distribution (top 30)")
         st.bar_chart(df.set_index("cve_id")["risk_score"].head(30))

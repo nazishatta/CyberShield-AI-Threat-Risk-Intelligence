@@ -1,6 +1,6 @@
 """
 Parses raw NVD CVE JSON objects into flat feature dicts suitable for ML.
-No data is written to disk here — caller decides what to do with the output.
+No data is written to disk — the caller decides what to do with the output.
 """
 
 from __future__ import annotations
@@ -9,30 +9,46 @@ from typing import Any
 
 
 def parse_cve(raw: dict) -> dict[str, Any]:
-    """Extract flat features from a single NVD CVE item."""
+    """Extract flat features from a single NVD CVE item.
+
+    Handles CVSS v3.1, v3.0, and v2 metrics gracefully.
+    Returns safe defaults for every field — never raises on malformed input.
+    """
     cve = raw.get("cve", {})
     cve_id = cve.get("id", "")
 
-    # CVSS scores
+    # ── CVSS metrics ──────────────────────────────────────────────────────────
     metrics = cve.get("metrics", {})
     cvss_v3 = _get_cvss_v3(metrics)
     cvss_v2 = _get_cvss_v2(metrics)
 
-    base_score = cvss_v3.get("cvssData", {}).get("baseScore") or \
-                 cvss_v2.get("cvssData", {}).get("baseScore")
+    cvss_v3_data = cvss_v3.get("cvssData", {})
+    cvss_v2_data = cvss_v2.get("cvssData", {})
+
+    # base_score: prefer v3.1/v3.0, fall back to v2
+    base_score = cvss_v3_data.get("baseScore") or cvss_v2_data.get("baseScore")
+
+    # severity: v3 stores it inside cvssData; v2 stores it at the metric entry level
     severity = (
-        cvss_v3.get("cvssData", {}).get("baseSeverity") or
-        cvss_v2.get("baseSeverity") or
-        "UNKNOWN"
+        cvss_v3_data.get("baseSeverity")
+        or cvss_v2.get("baseSeverity")
+        or "UNKNOWN"
     ).upper()
 
-    # Description (English preferred)
+    # attack_vector: v3 = "attackVector", v2 = "accessVector"
+    attack_vector = (
+        cvss_v3_data.get("attackVector")
+        or cvss_v2_data.get("accessVector")
+        or "UNKNOWN"
+    ).upper()
+
+    # ── Description (English preferred) ──────────────────────────────────────
     descriptions = cve.get("descriptions", [])
     description = next(
         (d["value"] for d in descriptions if d.get("lang") == "en"), ""
     )
 
-    # CWE
+    # ── CWE ──────────────────────────────────────────────────────────────────
     weaknesses = cve.get("weaknesses", [])
     cwes = [
         d["value"]
@@ -41,11 +57,10 @@ def parse_cve(raw: dict) -> dict[str, Any]:
         if d.get("lang") == "en"
     ]
 
-    # References
+    # ── References ───────────────────────────────────────────────────────────
     refs = cve.get("references", [])
-    ref_count = len(refs)
 
-    # Published / modified dates
+    # ── Dates ────────────────────────────────────────────────────────────────
     published = cve.get("published", "")
     last_modified = cve.get("lastModified", "")
 
@@ -57,14 +72,14 @@ def parse_cve(raw: dict) -> dict[str, Any]:
         "severity": severity,
         "description": description,
         "cwe": cwes[0] if cwes else "UNKNOWN",
-        "ref_count": ref_count,
-        "attack_vector": cvss_v3.get("cvssData", {}).get("attackVector", "UNKNOWN"),
-        "attack_complexity": cvss_v3.get("cvssData", {}).get("attackComplexity", "UNKNOWN"),
-        "privileges_required": cvss_v3.get("cvssData", {}).get("privilegesRequired", "UNKNOWN"),
-        "user_interaction": cvss_v3.get("cvssData", {}).get("userInteraction", "UNKNOWN"),
-        "confidentiality_impact": cvss_v3.get("cvssData", {}).get("confidentialityImpact", "UNKNOWN"),
-        "integrity_impact": cvss_v3.get("cvssData", {}).get("integrityImpact", "UNKNOWN"),
-        "availability_impact": cvss_v3.get("cvssData", {}).get("availabilityImpact", "UNKNOWN"),
+        "ref_count": len(refs),
+        "attack_vector": attack_vector,
+        "attack_complexity": cvss_v3_data.get("attackComplexity", "UNKNOWN"),
+        "privileges_required": cvss_v3_data.get("privilegesRequired", "UNKNOWN"),
+        "user_interaction": cvss_v3_data.get("userInteraction", "UNKNOWN"),
+        "confidentiality_impact": cvss_v3_data.get("confidentialityImpact", "UNKNOWN"),
+        "integrity_impact": cvss_v3_data.get("integrityImpact", "UNKNOWN"),
+        "availability_impact": cvss_v3_data.get("availabilityImpact", "UNKNOWN"),
     }
 
 

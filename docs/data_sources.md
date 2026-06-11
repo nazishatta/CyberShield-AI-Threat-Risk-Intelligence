@@ -35,6 +35,29 @@ CyberShield AI uses only **live API feeds** — no full datasets are downloaded 
 | `references` | `ref_count` | Number of references |
 | `published` | `published` | ISO-8601 timestamp |
 
+### Normalized output columns (after feature engineering)
+
+`src/features/feature_engineering.py` transforms the raw parsed fields into a
+model-ready DataFrame.  Every row is guaranteed to have these 12 columns:
+
+| Column | Type | Source | Notes |
+|---|---|---|---|
+| `cve_id` | str | NVD | e.g. `CVE-2021-44228` |
+| `severity` | str | NVD CVSS | CRITICAL / HIGH / MEDIUM / LOW / UNKNOWN |
+| `severity_numeric` | int | Derived | CRITICAL=4 HIGH=3 MEDIUM=2 LOW=1 UNKNOWN=0 |
+| `base_score` | float | NVD CVSS | 0.0–10.0; median-filled when missing |
+| `attack_vector` | str | NVD CVSS | NETWORK / ADJACENT / LOCAL / PHYSICAL / UNKNOWN |
+| `attack_vector_numeric` | int | Derived | NETWORK=4 ADJACENT=3 LOCAL=2 PHYSICAL=1 UNKNOWN=0 |
+| `cwe` | str | NVD | e.g. `CWE-78`; `UNKNOWN` when absent |
+| `published` | str | NVD | ISO-8601 timestamp |
+| `age_days` | int | Derived | Days since `published`; -1 when date is missing/malformed |
+| `in_kev` | bool | CISA KEV | True if CVE ID appears in the KEV catalogue |
+| `kev_numeric` | int | Derived | 1 if `in_kev`, else 0 |
+| `risk_score` | float | Derived | 0–100 composite; see `src/models/risk_scorer.py` |
+
+CVSS v3.1 is preferred; falls back to v3.0 then v2 when v3 data is absent.
+For CVSS v2, `accessVector` is mapped to `attack_vector`.
+
 ---
 
 ## 2. CISA Known Exploited Vulnerabilities (KEV)

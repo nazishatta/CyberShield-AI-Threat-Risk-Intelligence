@@ -27,9 +27,14 @@ Every analysis run fetches the minimal data needed via HTTP and processes it in 
 ┌──────────────────────────────────────────────────────────────────┐
 │                    src/features/                                 │
 │   cve_parser.py        — NVD JSON → flat feature dict            │
-│   feature_engineering.py — list[dict] → pandas DataFrame        │
+│                           (CVSS v3.1 / v3.0 / v2 fallback)      │
+│   feature_engineering.py — list[dict] + kev_ids                 │
+│                           → normalized DataFrame                 │
+│                           (severity_numeric, attack_vector_      │
+│                            numeric, age_days, in_kev,            │
+│                            kev_numeric, risk_score)              │
 └─────────────────────────────┬────────────────────────────────────┘
-                              │  DataFrame
+                              │  normalized DataFrame
                               ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │                    src/models/                                   │
@@ -52,9 +57,9 @@ Every analysis run fetches the minimal data needed via HTTP and processes it in 
 |---|---|
 | `src/ingestion/nvd_client.py` | Paginated NVD API client; respects rate limits |
 | `src/ingestion/kev_client.py` | Live CISA KEV fetch; returns a set of CVE IDs |
-| `src/features/cve_parser.py` | Extracts CVSS scores, CWE, attack vectors from raw NVD JSON |
-| `src/features/feature_engineering.py` | Builds ML-ready DataFrame; attaches KEV label |
-| `src/models/risk_scorer.py` | Rule-based baseline scorer (no training needed) |
+| `src/features/cve_parser.py` | Extracts CVSS scores, CWE, attack vectors from raw NVD JSON (v3.1/v3.0/v2) |
+| `src/features/feature_engineering.py` | Normalizes parsed dicts → DataFrame with ordinal encodings, age_days, KEV flag, risk score |
+| `src/models/risk_scorer.py` | Rule-based 0–100 risk score (called by feature_engineering) |
 | `src/models/classifier.py` | XGBoost classifier placeholder (trained on-the-fly, never saved to disk by default) |
 | `src/dashboard/app.py` | Streamlit entry point |
 | `src/utils/config.py` | Loads `config.yaml`; cached after first call |
