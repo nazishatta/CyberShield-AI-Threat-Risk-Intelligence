@@ -11,6 +11,7 @@ from src.features.cve_parser import parse_cve
 from src.features.feature_engineering import build_features
 from src.ingestion.kev_client import CISAKEVError, get_kev_cve_ids
 from src.ingestion.nvd_client import NVDAPIError, NVDRateLimitError, iter_cves
+from src.models.classifier import MIN_TRAINING_SAMPLES, ModelTrainingError, predict, train
 from src.utils.config import load_config
 from src.utils.logger import setup_logger
 
@@ -209,6 +210,49 @@ if fetch_btn:
     if len(df) > 1:
         st.subheader("Risk Score Distribution (top 30)")
         st.bar_chart(df.set_index("cve_id")["risk_score"].head(30))
+
+    # Step 9 — ML analysis
+    with st.expander("🤖 ML Analysis (baseline model)", expanded=False):
+        st.caption(
+            "Trains a LogisticRegression on the current result set and scores each CVE. "
+            "This is an educational baseline — not a production exploit predictor. "
+            "See docs/modeling.md for limitations."
+        )
+        if len(df) < MIN_TRAINING_SAMPLES:
+            st.warning(
+                f"ML training requires at least {MIN_TRAINING_SAMPLES} CVEs; "
+                f"only {len(df)} fetched. Increase 'Max CVEs' and retry."
+            )
+        else:
+            try:
+                pipeline, metrics = train(df)
+                m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+                m_col1.metric("Accuracy", f"{metrics['accuracy']:.0%}")
+                m_col2.metric("Precision", f"{metrics['precision']:.0%}")
+                m_col3.metric("Recall", f"{metrics['recall']:.0%}")
+                m_col4.metric("F1", f"{metrics['f1']:.0%}")
+                st.caption(
+                    f"Trained on {metrics['n_train']} CVEs · "
+                    f"Evaluated on {metrics['n_test']} CVEs · "
+                    "Label: risk_score ≥ 70"
+                )
+
+                probs = predict(pipeline, df)
+                display_df = df[["cve_id", "risk_score"]].copy()
+                display_df["high_risk_prob"] = probs.values
+                st.dataframe(
+                    display_df.sort_values("high_risk_prob", ascending=False).rename(
+                        columns={
+                            "cve_id": "CVE ID",
+                            "risk_score": "Rule Score",
+                            "high_risk_prob": "ML High-Risk Prob",
+                        }
+                    ),
+                    use_container_width=True,
+                    hide_index=True,
+                )
+            except ModelTrainingError as exc:
+                st.warning(f"ML training skipped: {exc}")
 
 else:
     st.info("Configure your query in the sidebar and click **Fetch & Analyse**.")

@@ -39,7 +39,9 @@ Every analysis run fetches the minimal data needed via HTTP and processes it in 
 ┌──────────────────────────────────────────────────────────────────┐
 │                    src/models/                                   │
 │   risk_scorer.py   — rule-based 0-100 score (Milestone 0)        │
-│   classifier.py    — XGBoost exploit probability (Milestone 2)   │
+│   classifier.py    — scikit-learn baseline classifier (M5)        │
+│                       LogisticRegression / RandomForest            │
+│                       target: high_risk = risk_score ≥ 70         │
 └─────────────────────────────┬────────────────────────────────────┘
                               │  scored DataFrame
                               ▼
@@ -60,7 +62,7 @@ Every analysis run fetches the minimal data needed via HTTP and processes it in 
 | `src/features/cve_parser.py` | Extracts CVSS scores, CWE, attack vectors from raw NVD JSON (v3.1/v3.0/v2) |
 | `src/features/feature_engineering.py` | Normalizes parsed dicts → DataFrame with ordinal encodings, age_days, KEV flag, risk score |
 | `src/models/risk_scorer.py` | Rule-based 0–100 risk score (called by feature_engineering) |
-| `src/models/classifier.py` | XGBoost classifier placeholder (trained on-the-fly, never saved to disk by default) |
+| `src/models/classifier.py` | scikit-learn baseline classifier — LogisticRegression or RandomForest, trained on-the-fly, never saved to disk by default |
 | `src/dashboard/app.py` | Streamlit entry point |
 | `src/utils/config.py` | Loads `config.yaml`; cached after first call |
 | `src/utils/logger.py` | Loguru setup (stderr only, no log files written to Git) |

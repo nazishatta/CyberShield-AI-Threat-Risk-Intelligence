@@ -19,7 +19,7 @@ CISA KEV ──► src/ingestion/kev_client.py  ─┘
 |---|---|
 | **Ingestion** | Paginated live API calls — never stores raw data |
 | **Features** | Parses CVE JSON → flat feature dict → Pandas DataFrame |
-| **Models** | Rule-based scorer (M0) → XGBoost classifier (M2) |
+| **Models** | Rule-based scorer + scikit-learn baseline classifier (LogisticRegression / RandomForest) |
 | **Dashboard** | Streamlit app with live query, metrics, and charts |
 
 ---
@@ -33,7 +33,7 @@ CISA KEV ──► src/ingestion/kev_client.py  ─┘
 | 2 | Production NVD CVE ingestion — keyword, CVE ID, date range, pagination, error handling | ✅ Done |
 | 3 | Production CISA KEV ingestion — typed exceptions, full entry metadata, dashboard date filters | ✅ Done |
 | 4 | Feature engineering — normalized columns, age_days, severity/AV encoding, KEV flag, risk score | ✅ Done |
-| 5 | ML exploit-likelihood classifier (XGBoost) | 🔜 Next |
+| 5 | Baseline ML classifier (scikit-learn) — high_risk label, LogisticRegression / RandomForest, F1 metrics | ✅ Done |
 | 5 | NLP description embeddings (sentence-transformers) | Planned |
 | 6 | CVSS trend analysis & time-series plots | Planned |
 | 7 | Docker deployment + GitHub Actions full CI/CD | Planned |
@@ -132,6 +132,7 @@ Full details including field mapping and API key setup: [docs/data_sources.md](d
 |---|---|
 | [docs/project_architecture.md](docs/project_architecture.md) | Layer diagram, data flow, how to add a new source |
 | [docs/data_sources.md](docs/data_sources.md) | NVD + CISA KEV API details, field mapping, storage policy |
+| [docs/modeling.md](docs/modeling.md) | Baseline ML classifier — features, limitations, configuration |
 | [docs/responsible_use.md](docs/responsible_use.md) | Ethical use, model disclaimer, API guidelines |
 
 ---
