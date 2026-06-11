@@ -57,6 +57,16 @@ Every analysis run fetches the minimal data needed via HTTP and processes it in 
 │                    src/dashboard/                                │
 │   app.py  — Streamlit UI: query controls, metrics, charts        │
 └──────────────────────────────────────────────────────────────────┘
+
+                    ── also consumed by ──
+
+┌──────────────────────────────────────────────────────────────────┐
+│                    src/api/                                      │
+│   main.py — FastAPI REST API (M8)                                │
+│   GET  /health   GET  /version                                   │
+│   POST /score    POST /recommend                                 │
+│   Defensive scoring only — no exploit content                    │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -72,6 +82,7 @@ Every analysis run fetches the minimal data needed via HTTP and processes it in 
 | `src/models/risk_scorer.py` | Rule-based 0–100 risk score (called by feature_engineering) |
 | `src/models/classifier.py` | scikit-learn baseline classifier — LogisticRegression or RandomForest, trained on-the-fly, never saved to disk by default |
 | `src/recommendations/mitigation.py` | Tier-based defensive remediation recommendations — no exploit content |
+| `src/api/main.py` | FastAPI REST API — `/health`, `/version`, `/score`, `/recommend`; defensive only |
 | `src/dashboard/app.py` | Streamlit entry point |
 | `src/utils/config.py` | Loads `config.yaml`; cached after first call |
 | `src/utils/logger.py` | Loguru setup (stderr only, no log files written to Git) |

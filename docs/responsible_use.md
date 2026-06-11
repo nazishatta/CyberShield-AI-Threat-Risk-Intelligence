@@ -11,6 +11,21 @@ It surfaces publicly available vulnerability data to help defenders prioritise p
 - Researchers studying vulnerability trends and risk scoring methodologies
 - Students learning about CVE data pipelines and applied ML in cybersecurity
 - Portfolio demonstration of API-first data engineering and ML practices
+- Integrating defensive CVE scoring into internal tooling via the REST API (`src/api/`)
+
+---
+
+## REST API usage policy
+
+The `src/api/` FastAPI service exposes the same defensive scoring and mitigation
+logic as the dashboard via HTTP endpoints. The same constraints apply:
+
+- The API does **not** call the NVD API or CISA KEV API on your behalf.
+- The API does **not** download or cache any CVE dataset.
+- All scoring runs in-memory from the values you submit in the request body.
+- Do not use the API to automate offensive security operations.
+
+See [docs/api.md](api.md) for endpoint documentation and example requests.
 
 ---
 

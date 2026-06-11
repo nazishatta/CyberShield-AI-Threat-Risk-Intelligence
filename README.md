@@ -21,6 +21,7 @@ CISA KEV ──► src/ingestion/kev_client.py  ─┘
 | **Features** | Parses CVE JSON → flat feature dict → Pandas DataFrame |
 | **Models** | Rule-based scorer + scikit-learn baseline classifier (LogisticRegression / RandomForest) |
 | **Recommendations** | Tier-based defensive mitigation guidance (CRITICAL/HIGH/MEDIUM/LOW priority) |
+| **API** | FastAPI REST service — `/score` and `/recommend` endpoints, Pydantic validation |
 | **Dashboard** | Streamlit app with live query, metrics, charts, and recommendations |
 
 ---
@@ -38,8 +39,9 @@ CISA KEV ──► src/ingestion/kev_client.py  ─┘
 | 6 | Model evaluation & explainability — confusion matrix, class balance, permutation importance, misleading-accuracy detection | ✅ Done |
 | 6.5 | ML performance hardening — balanced class weights (RF + LR), threshold sweep, recommended threshold (F1 / Recall), confusion matrix at chosen threshold | ✅ Done |
 | 7 | Defensive mitigation recommendation layer — priority tiers, SLA guidance, CWE-aware remediation | ✅ Done |
-| 8 | CVSS trend analysis & time-series plots | Planned |
-| 9 | Docker deployment + GitHub Actions full CI/CD | Planned |
+| 8 | FastAPI defensive scoring API — /health, /version, /score, /recommend | ✅ Done |
+| 9 | CVSS trend analysis & time-series plots | Planned |
+| 10 | Docker deployment + GitHub Actions full CI/CD | Planned |
 
 ---
 
@@ -91,6 +93,7 @@ CyberShield-AI-Threat-Risk-Intelligence/
 │   ├── features/           # CVE parser + feature engineering
 │   ├── models/             # Risk scorer + ML classifier
 │   ├── recommendations/    # Defensive mitigation guidance
+│   ├── api/                # FastAPI REST API (M8)
 │   ├── dashboard/          # Streamlit app
 │   └── utils/              # Config loader, logger
 ├── data/
@@ -137,8 +140,53 @@ Full details including field mapping and API key setup: [docs/data_sources.md](d
 | [docs/project_architecture.md](docs/project_architecture.md) | Layer diagram, data flow, how to add a new source |
 | [docs/data_sources.md](docs/data_sources.md) | NVD + CISA KEV API details, field mapping, storage policy |
 | [docs/modeling.md](docs/modeling.md) | Baseline ML classifier — features, evaluation metrics, class imbalance, feature importance, limitations |
+| [docs/api.md](docs/api.md) | FastAPI REST API — endpoints, request/response schemas, PowerShell examples |
 | [docs/mitigation_guidance.md](docs/mitigation_guidance.md) | Defensive mitigation layer — priority tiers, CWE guidance, SLA recommendations |
 | [docs/responsible_use.md](docs/responsible_use.md) | Ethical use, model disclaimer, API guidelines |
+
+---
+
+## API usage (Milestone 8)
+
+The FastAPI defensive scoring API runs alongside the dashboard and requires no dataset downloads.
+
+### Start the API server
+
+```powershell
+python -m uvicorn src.api.main:app --reload
+```
+
+Interactive docs open at **http://127.0.0.1:8000/docs**
+
+### Score a CVE (PowerShell)
+
+```powershell
+$body = @{
+    cve_id        = "CVE-2024-12345"
+    severity      = "HIGH"
+    base_score    = 8.5
+    attack_vector = "NETWORK"
+    cwe           = "CWE-89"
+    published     = "2023-06-01T00:00:00.000"
+    in_kev        = $false
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/score" `
+                  -Method POST `
+                  -ContentType "application/json" `
+                  -Body $body
+```
+
+### Get a mitigation recommendation (PowerShell)
+
+```powershell
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/recommend" `
+                  -Method POST `
+                  -ContentType "application/json" `
+                  -Body $body
+```
+
+Full endpoint documentation: [docs/api.md](docs/api.md)
 
 ---
 
