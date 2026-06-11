@@ -249,3 +249,17 @@ def test_evaluate_metrics_in_valid_range():
     metrics = evaluate(pipeline, X_test, y_test)
     for key, val in metrics.items():
         assert 0.0 <= val <= 1.0, f"{key}={val} out of [0, 1]"
+
+
+# ── class_weight="balanced" ───────────────────────────────────────────────────
+
+def test_logistic_regression_has_balanced_class_weight():
+    pipeline, _ = train(_make_df(), model_type="logistic")
+    clf = pipeline.named_steps["clf"]
+    assert clf.class_weight == "balanced"
+
+
+def test_random_forest_has_balanced_class_weight():
+    pipeline, _ = train(_make_df(), model_type="random_forest")
+    clf = pipeline.named_steps["clf"]
+    assert clf.class_weight == "balanced"
