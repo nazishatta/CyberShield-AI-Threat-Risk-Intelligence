@@ -1,1 +1,122 @@
-# CyberShield AI: Threat Prediction and Cyber Risk Intelligence Platform
+# CyberShield AI — Threat Prediction & Cyber Risk Intelligence Platform
+
+> API-first · storage-light · beginner-friendly · production-grade structure
+
+CyberShield AI fetches vulnerability intelligence **live** from the NVD CVE API and the CISA Known Exploited Vulnerabilities (KEV) catalogue, scores each CVE with a risk model, and surfaces the results in an interactive Streamlit dashboard.
+No full dataset is ever downloaded locally.
+
+---
+
+## Architecture overview
+
+```
+NVD API  ──► src/ingestion/nvd_client.py  ─┐
+                                             ├─► src/features/ ─► src/models/ ─► src/dashboard/
+CISA KEV ──► src/ingestion/kev_client.py  ─┘
+```
+
+| Layer | What it does |
+|---|---|
+| **Ingestion** | Paginated live API calls — never stores raw data |
+| **Features** | Parses CVE JSON → flat feature dict → Pandas DataFrame |
+| **Models** | Rule-based scorer (M0) → XGBoost classifier (M2) |
+| **Dashboard** | Streamlit app with live query, metrics, and charts |
+
+---
+
+## Milestones
+
+| # | Name | Status |
+|---|---|---|
+| 0 | Repo scaffold, config, CI, dashboard skeleton | ✅ Done |
+| 1 | Live NVD + KEV ingestion, feature engineering | 🔜 Next |
+| 2 | ML exploit-likelihood classifier (XGBoost) | Planned |
+| 3 | NLP description embeddings (sentence-transformers) | Planned |
+| 4 | CVSS trend analysis & time-series plots | Planned |
+| 5 | Docker deployment + GitHub Actions full CI/CD | Planned |
+
+---
+
+## Quick start
+
+### 1 — Clone & create a virtual environment
+
+```powershell
+git clone https://github.com/<your-username>/CyberShield-AI-Threat-Risk-Intelligence.git
+cd CyberShield-AI-Threat-Risk-Intelligence
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+### 2 — Configure environment variables
+
+```powershell
+Copy-Item .env.example .env
+# Open .env and add your NVD_API_KEY (optional but removes rate-limit)
+```
+
+### 3 — Run the dashboard
+
+```powershell
+.\run_app.ps1
+```
+
+Or manually:
+
+```powershell
+streamlit run src\dashboard\app.py
+```
+
+### 4 — Run tests
+
+```powershell
+pytest tests/ -v --cov=src
+```
+
+---
+
+## Project structure
+
+```
+CyberShield-AI-Threat-Risk-Intelligence/
+├── src/
+│   ├── ingestion/          # NVD + KEV API clients
+│   ├── features/           # CVE parser + feature engineering
+│   ├── models/             # Risk scorer + ML classifier
+│   ├── dashboard/          # Streamlit app
+│   └── utils/              # Config loader, logger
+├── data/
+│   └── samples/            # Tiny demo files only (git-tracked)
+├── tests/                  # Pytest unit tests
+├── .github/workflows/      # GitHub Actions CI
+├── config.yaml             # All tunable parameters
+├── .env.example            # Template — copy to .env, never commit .env
+├── requirements.txt
+├── Dockerfile
+└── run_app.ps1             # One-command launch (Windows)
+```
+
+---
+
+## Data sources
+
+| Source | URL | How accessed |
+|---|---|---|
+| NVD CVE 2.0 API | https://nvd.nist.gov/developers/vulnerabilities | Live paginated HTTP |
+| CISA KEV | https://www.cisa.gov/known-exploited-vulnerabilities-catalog | Live JSON fetch |
+
+---
+
+## Security notes
+
+- **Never commit `.env`** — it is git-ignored.
+- API keys are read from environment variables via `python-dotenv`.
+- `data/raw/` and `data/processed/` are git-ignored.
+- The CI workflow includes a basic secret scan on `.env.example`.
+
+---
+
+## License
+
+[MIT](LICENSE)

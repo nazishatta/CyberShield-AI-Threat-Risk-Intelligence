@@ -1,0 +1,27 @@
+app:
+  name: "CyberShield AI"
+  version: "0.1.0"
+  log_level: "INFO"
+
+nvd:
+  base_url: "https://services.nvd.nist.gov/rest/json/cves/2.0"
+  page_size: 100          # items per API request (max 2000, keep small)
+  request_delay_s: 6      # seconds between requests without API key
+  request_delay_keyed_s: 0.6  # seconds between requests with API key
+
+cisa_kev:
+  url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+
+model:
+  random_state: 42
+  test_size: 0.2
+  cv_folds: 5
+
+dashboard:
+  host: "0.0.0.0"
+  port: 8501
+  theme: "dark"
+
+data:
+  sample_cve_file: "data/samples/sample_cves.json"
+  sample_kev_file: "data/samples/sample_kev.json"
