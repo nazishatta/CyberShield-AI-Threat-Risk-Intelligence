@@ -20,6 +20,13 @@ ENV/
 data/raw/
 data/processed/
 data/cache/
+*.csv
+*.tsv
+*.parquet
+*.feather
+*.ndjson
+# Exception: tiny curated sample files in data/samples/ ARE tracked
+!data/samples/**
 
 # ── Model artefacts ──────────────────────────────────────────────────────────
 models/
@@ -29,6 +36,18 @@ models/
 *.pt
 *.pth
 *.onnx
+*.npy
+*.npz
+*.safetensors
+
+# ── Generated reports / figures ──────────────────────────────────────────────
+reports/figures/*.png
+reports/figures/*.svg
+reports/figures/*.pdf
+reports/figures/*.jpg
+reports/figures/*.html
+# Keep the placeholder so Git tracks the folder
+!reports/figures/.gitkeep
 
 # ── Secrets / credentials ────────────────────────────────────────────────────
 .env
