@@ -382,54 +382,55 @@ if fetch_btn:
                 st.warning(f"ML training skipped: {exc}")
 
     # Step 10 — Defensive Recommendations
-    with st.expander("🛡️ Defensive Recommendations", expanded=False):
-        st.caption(
-            "Prioritised remediation guidance based on public CVSS metadata and CISA KEV status. "
-            "Verify against your asset inventory before acting. "
-            "See docs/mitigation_guidance.md for full tier logic."
-        )
-        recs = build_recommendations(df)
+    st.markdown("---")
+    st.subheader("🛡️ Defensive Recommendations")
+    st.caption(
+        "Prioritised remediation guidance based on public CVSS metadata and CISA KEV status. "
+        "Verify against your asset inventory before acting. "
+        "See docs/mitigation_guidance.md for full tier logic."
+    )
+    recs = build_recommendations(df)
 
-        # Summary table
-        st.dataframe(
-            recs[[
-                "cve_id", "priority_level", "action_title",
-                "suggested_sla", "escalation_required",
-            ]].rename(columns={
-                "cve_id": "CVE ID",
-                "priority_level": "Priority",
-                "action_title": "Action",
-                "suggested_sla": "SLA",
-                "escalation_required": "Escalate?",
-            }),
-            use_container_width=True,
-            hide_index=True,
-        )
+    # Summary table
+    st.dataframe(
+        recs[[
+            "cve_id", "priority_level", "action_title",
+            "suggested_sla", "escalation_required",
+        ]].rename(columns={
+            "cve_id": "CVE ID",
+            "priority_level": "Priority",
+            "action_title": "Action",
+            "suggested_sla": "SLA",
+            "escalation_required": "Escalate?",
+        }),
+        use_container_width=True,
+        hide_index=True,
+    )
 
-        st.divider()
+    st.divider()
 
-        # Per-CVE detail expanders (top 10 by priority)
-        st.markdown("**Detailed recommendations** (top CVEs by priority)")
-        for _, rec in recs.head(10).iterrows():
-            label = f"{rec['cve_id']} — {rec['priority_level']} — {rec['action_title']}"
-            with st.expander(label, expanded=False):
-                st.markdown(f"**Recommendation:** {rec['recommendation']}")
-                st.markdown(f"**Rationale:** {rec['rationale']}")
-                d_col1, d_col2 = st.columns(2)
-                d_col1.metric("Suggested SLA", rec["suggested_sla"])
-                d_col2.metric(
-                    "Escalation Required",
-                    "Yes" if rec["escalation_required"] else "No",
-                )
-                st.caption(rec["responsible_use_note"])
+    # Per-CVE detail expanders (top 10 by priority)
+    st.markdown("**Detailed recommendations** (top CVEs by priority)")
+    for _, rec in recs.head(10).iterrows():
+        label = f"{rec['cve_id']} — {rec['priority_level']} — {rec['action_title']}"
+        with st.expander(label, expanded=False):
+            st.markdown(f"**Recommendation:** {rec['recommendation']}")
+            st.markdown(f"**Rationale:** {rec['rationale']}")
+            d_col1, d_col2 = st.columns(2)
+            d_col1.metric("Suggested SLA", rec["suggested_sla"])
+            d_col2.metric(
+                "Escalation Required",
+                "Yes" if rec["escalation_required"] else "No",
+            )
+            st.caption(rec["responsible_use_note"])
 
-        st.divider()
-        st.info(
-            "**Responsible use:** Recommendations are generated from public CVSS metadata "
-            "and CISA KEV data. They are intended to assist — not replace — professional "
-            "security judgement. Always verify against your organisation's asset inventory "
-            "and risk tolerance before acting."
-        )
+    st.divider()
+    st.info(
+        "**Responsible use:** Recommendations are generated from public CVSS metadata "
+        "and CISA KEV data. They are intended to assist — not replace — professional "
+        "security judgement. Always verify against your organisation's asset inventory "
+        "and risk tolerance before acting."
+    )
 
 else:
     st.info("Configure your query in the sidebar and click **Fetch & Analyse**.")
