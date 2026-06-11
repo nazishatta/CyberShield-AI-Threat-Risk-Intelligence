@@ -5,9 +5,10 @@ app:
 
 nvd:
   base_url: "https://services.nvd.nist.gov/rest/json/cves/2.0"
-  page_size: 100          # items per API request (max 2000, keep small)
-  request_delay_s: 6      # seconds between requests without API key
-  request_delay_keyed_s: 0.6  # seconds between requests with API key
+  page_size: 100              # items per API request (NVD max is 2000; keep small)
+  request_delay_s: 6          # seconds between pages without an API key
+  request_delay_keyed_s: 0.6  # seconds between pages with an API key
+  max_results_hard_limit: 2000 # absolute ceiling — prevents accidental bulk downloads
 
 cisa_kev:
   url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"

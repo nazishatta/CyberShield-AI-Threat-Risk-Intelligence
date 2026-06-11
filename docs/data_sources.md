@@ -56,6 +56,61 @@ In our model, KEV membership adds 20 points to the rule-based risk score and pro
 
 ---
 
+## Storage-light NVD ingestion strategy
+
+The NVD provides a bulk data download (a set of large JSON files updated daily).
+CyberShield AI deliberately does **not** use those files.
+Here is why and how we stay storage-light instead:
+
+### Why we avoid bulk downloads
+
+| Concern | Detail |
+|---|---|
+| Disk space | The full NVD corpus is hundreds of MB compressed and several GB uncompressed |
+| Staleness | A downloaded snapshot is outdated the moment it lands; live API is always current |
+| Git hygiene | Large binary/JSON blobs bloat the repository and cannot be diffed meaningfully |
+| Reproducibility | A pinned snapshot diverges from the live feed; a live query is always authoritative |
+
+### How pagination keeps requests small
+
+`iter_cves()` in `src/ingestion/nvd_client.py` uses a sliding window:
+
+```
+Request 1:  startIndex=0,   resultsPerPage=100  → yields items 0–99
+Request 2:  startIndex=100, resultsPerPage=100  → yields items 100–199
+...
+Stops when: fetched >= max_results  OR  startIndex >= totalResults
+```
+
+Key safety mechanisms:
+
+- **`max_results` argument** — the caller decides how many CVEs to fetch (default 100).
+- **`max_results_hard_limit`** in `config.yaml` (default 2000) — silently caps any call, even if the caller passes a larger number.
+- **Inter-page delay** — 6 s without an API key, 0.6 s with one. Applied only between pages (not before the first request).
+- **First-page-free rule** — the delay fires at the top of each iteration after the first, so a single-page query never sleeps at all.
+
+### Query modes
+
+`fetch_cves()` and `iter_cves()` support four mutually composable filters:
+
+| Parameter | NVD API param | Example value |
+|---|---|---|
+| `keyword` | `keywordSearch` | `"remote code execution"` |
+| `cve_id` | `cveId` | `"CVE-2021-44228"` |
+| `pub_start_date` | `pubStartDate` | `"2024-01-01T00:00:00.000"` |
+| `pub_end_date` | `pubEndDate` | `"2024-12-31T23:59:59.000"` |
+
+### Error classes
+
+| Exception | When raised |
+|---|---|
+| `NVDRateLimitError` | HTTP 403 — slow down or add `NVD_API_KEY` to `.env` |
+| `NVDAPIError` | Any other HTTP error, network failure, or malformed JSON response |
+
+`NVDRateLimitError` is a subclass of `NVDAPIError`, so `except NVDAPIError` catches both.
+
+---
+
 ## Data storage policy
 
 | Location | Git-tracked | Purpose |
