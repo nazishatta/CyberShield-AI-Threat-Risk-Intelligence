@@ -29,7 +29,8 @@ data/cache/
 !data/samples/**
 
 # ── Model artefacts ──────────────────────────────────────────────────────────
-models/
+# Leading slash anchors to the repository root only — src/models/ is NOT ignored
+/models/
 *.pkl
 *.joblib
 *.h5
