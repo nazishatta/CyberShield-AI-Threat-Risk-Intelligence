@@ -40,6 +40,20 @@ All data displayed originates from **publicly available, government-maintained f
 
 ---
 
+## Mitigation recommendation layer
+
+The `src/recommendations/mitigation.py` module produces **defensive remediation
+guidance** based on CVSS metadata and CISA KEV membership. All recommendations are:
+
+- Focused on **defensive actions** (patching, isolation, compensating controls).
+- Free of exploit code, proof-of-concept steps, or attack instructions.
+- Intended as **starting points for analyst review**, not final prescriptions.
+
+See [docs/mitigation_guidance.md](mitigation_guidance.md) for full tier logic
+and interpretation guidance.
+
+---
+
 ## Model output disclaimer
 
 Risk scores and exploit-likelihood predictions produced by this tool are:

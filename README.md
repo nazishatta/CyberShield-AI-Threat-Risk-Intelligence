@@ -11,7 +11,7 @@ No full dataset is ever downloaded locally.
 
 ```
 NVD API  ──► src/ingestion/nvd_client.py  ─┐
-                                             ├─► src/features/ ─► src/models/ ─► src/dashboard/
+                                             ├─► src/features/ ─► src/models/ ─► src/recommendations/ ─► src/dashboard/
 CISA KEV ──► src/ingestion/kev_client.py  ─┘
 ```
 
@@ -20,7 +20,8 @@ CISA KEV ──► src/ingestion/kev_client.py  ─┘
 | **Ingestion** | Paginated live API calls — never stores raw data |
 | **Features** | Parses CVE JSON → flat feature dict → Pandas DataFrame |
 | **Models** | Rule-based scorer + scikit-learn baseline classifier (LogisticRegression / RandomForest) |
-| **Dashboard** | Streamlit app with live query, metrics, and charts |
+| **Recommendations** | Tier-based defensive mitigation guidance (CRITICAL/HIGH/MEDIUM/LOW priority) |
+| **Dashboard** | Streamlit app with live query, metrics, charts, and recommendations |
 
 ---
 
@@ -36,9 +37,9 @@ CISA KEV ──► src/ingestion/kev_client.py  ─┘
 | 5 | Baseline ML classifier (scikit-learn) — high_risk label, LogisticRegression / RandomForest, F1 metrics | ✅ Done |
 | 6 | Model evaluation & explainability — confusion matrix, class balance, permutation importance, misleading-accuracy detection | ✅ Done |
 | 6.5 | ML performance hardening — balanced class weights (RF + LR), threshold sweep, recommended threshold (F1 / Recall), confusion matrix at chosen threshold | ✅ Done |
-| 7 | NLP description embeddings (sentence-transformers) | Planned |
+| 7 | Defensive mitigation recommendation layer — priority tiers, SLA guidance, CWE-aware remediation | ✅ Done |
 | 8 | CVSS trend analysis & time-series plots | Planned |
-| 7 | Docker deployment + GitHub Actions full CI/CD | Planned |
+| 9 | Docker deployment + GitHub Actions full CI/CD | Planned |
 
 ---
 
@@ -89,6 +90,7 @@ CyberShield-AI-Threat-Risk-Intelligence/
 │   ├── ingestion/          # NVD + KEV live API clients
 │   ├── features/           # CVE parser + feature engineering
 │   ├── models/             # Risk scorer + ML classifier
+│   ├── recommendations/    # Defensive mitigation guidance
 │   ├── dashboard/          # Streamlit app
 │   └── utils/              # Config loader, logger
 ├── data/
@@ -135,6 +137,7 @@ Full details including field mapping and API key setup: [docs/data_sources.md](d
 | [docs/project_architecture.md](docs/project_architecture.md) | Layer diagram, data flow, how to add a new source |
 | [docs/data_sources.md](docs/data_sources.md) | NVD + CISA KEV API details, field mapping, storage policy |
 | [docs/modeling.md](docs/modeling.md) | Baseline ML classifier — features, evaluation metrics, class imbalance, feature importance, limitations |
+| [docs/mitigation_guidance.md](docs/mitigation_guidance.md) | Defensive mitigation layer — priority tiers, CWE guidance, SLA recommendations |
 | [docs/responsible_use.md](docs/responsible_use.md) | Ethical use, model disclaimer, API guidelines |
 
 ---
