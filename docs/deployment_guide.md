@@ -205,12 +205,49 @@ See [docs/responsible_use.md](responsible_use.md) for the full policy.
 
 ---
 
+## GitHub Actions CI (Milestone 10)
+
+Every push and pull request to `main` runs three automated jobs via
+`.github/workflows/python-ci.yml`:
+
+| Job | What it checks |
+|---|---|
+| **Test (Python 3.11)** | Installs all dependencies from `requirements.txt` and runs `pytest tests/ -v`. All tests use mocks and synthetic data — no real NVD or CISA API calls are made. `NVD_API_KEY` is intentionally not set. |
+| **Secret hygiene scan** | Verifies `.env` is not tracked by git. Scans every tracked text file (skipping `.env.example`) for `KEY=<real-value>` patterns that resemble committed secrets. |
+| **Dockerfile sanity check** | Confirms `Dockerfile` exists and contains the required base image, ENV vars, port declarations, and layer ordering — without needing Docker installed on the runner. |
+
+### What CI does NOT do
+
+- CI never downloads CVE datasets or calls `nvd.nist.gov` / `cisa.gov`.
+- CI never uploads screenshots from `reports/figures/`.
+- CI never requires a real `NVD_API_KEY` GitHub secret — the full test suite
+  passes with zero network calls.
+
+### Running CI checks locally
+
+To replicate what CI runs before pushing:
+
+```powershell
+# Full test suite (matches CI Job 1)
+pytest tests/ -v
+
+# Quick secret scan (manual equivalent of CI Job 2)
+git ls-files | ForEach-Object {
+    if ($_ -ne ".env.example") {
+        Select-String -Path $_ -Pattern "(NVD_API_KEY|API_KEY|SECRET|TOKEN)\s*=\s*\S" -SimpleMatch
+    }
+}
+```
+
+---
+
 ## Related files
 
 | File | Role |
 |---|---|
 | `Dockerfile` | Single image supporting both Streamlit (default) and FastAPI (override) |
 | `.dockerignore` | Excludes secrets, datasets, model artefacts, screenshots, caches |
+| `.github/workflows/python-ci.yml` | GitHub Actions CI — tests, secret scan, Dockerfile check |
 | `docs/api.md` | FastAPI endpoint reference with example requests |
 | `docs/responsible_use.md` | Ethical use guidelines |
 | `requirements.txt` | Pinned Python dependencies |

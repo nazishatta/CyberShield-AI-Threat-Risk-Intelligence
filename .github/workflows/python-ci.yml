@@ -1,0 +1,148 @@
+name: Python CI
+
+# Triggers: every push to main and every pull-request that targets main.
+# This is a defensive-cybersecurity project — CI never calls real external APIs,
+# never downloads datasets, and never requires NVD_API_KEY to be set.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Minimal permissions — read-only checkout is all we need.
+permissions:
+  contents: read
+
+jobs:
+
+  # ── Job 1: Full test suite ──────────────────────────────────────────────────
+  test:
+    name: Test (Python 3.11)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        # NVD_API_KEY is intentionally NOT set — all tests use mocks and synthetic
+        # data. The test suite must pass with zero network calls.
+        run: pytest tests/ -v
+
+  # ── Job 2: Secret hygiene scan ─────────────────────────────────────────────
+  secret-hygiene:
+    name: Secret hygiene scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Verify .env is not tracked by git
+        run: |
+          if git ls-files --error-unmatch .env 2>/dev/null; then
+            echo "ERROR: .env is committed to the repository!"
+            echo "Remove it with:  git rm --cached .env"
+            exit 1
+          fi
+          echo ".env is not tracked — OK."
+
+      - name: Scan tracked files for committed secrets
+        # Skips .env.example (intentional placeholders) and binary files.
+        # Fails if any tracked file contains a KEY=<real-value> pattern where
+        # the value is 8+ alphanumeric chars and is NOT a known placeholder word.
+        run: |
+          echo "Scanning tracked files for obvious committed secrets..."
+          echo "(Skipping .env.example — placeholder values are expected there)"
+          FAILED=0
+          while IFS= read -r file; do
+            [[ "$file" == ".env.example" ]] && continue
+            [[ ! -f "$file" ]] && continue
+            # Only scan text files
+            file --mime "$file" 2>/dev/null | grep -q "text/" || continue
+            # Match KEY=<value> where value looks like a real key (8+ alnum chars)
+            # and does NOT contain a known placeholder word
+            if grep -nE \
+                 '(NVD_API_KEY|SHODAN_API_KEY|API_KEY|SECRET|TOKEN)\s*=\s*[A-Za-z0-9+/_-]{8,}' \
+                 "$file" 2>/dev/null \
+               | grep -vE '(your_|<[A-Za-z]|here|example|placeholder|xxx|dummy|test|fake)' \
+               > /dev/null 2>&1; then
+              echo "  Potential committed secret in: $file"
+              grep -nE \
+                '(NVD_API_KEY|SHODAN_API_KEY|API_KEY|SECRET|TOKEN)\s*=\s*\S+' \
+                "$file" | head -5
+              FAILED=1
+            fi
+          done < <(git ls-files)
+          if [ "$FAILED" -eq 1 ]; then
+            echo ""
+            echo "Secret hygiene check FAILED."
+            echo "Move real credentials to .env (which is git-ignored) and never commit them."
+            exit 1
+          fi
+          echo "Secret hygiene check passed — no obvious committed secrets found."
+
+  # ── Job 3: Dockerfile sanity check ─────────────────────────────────────────
+  dockerfile-check:
+    name: Dockerfile sanity check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Verify Dockerfile content
+        # Text-based check — no Docker daemon required.
+        # Ensures the image is built correctly before a developer discovers
+        # a broken Dockerfile on their machine.
+        run: |
+          echo "Checking Dockerfile..."
+
+          test -f Dockerfile \
+            || { echo "[FAIL] Dockerfile not found at project root"; exit 1; }
+          echo "  [OK] Dockerfile exists"
+
+          grep -q "python:3.11-slim" Dockerfile \
+            || { echo "[FAIL] Dockerfile must use python:3.11-slim"; exit 1; }
+          echo "  [OK] Uses python:3.11-slim"
+
+          grep -q "PYTHONDONTWRITEBYTECODE" Dockerfile \
+            || { echo "[FAIL] PYTHONDONTWRITEBYTECODE must be set"; exit 1; }
+          echo "  [OK] PYTHONDONTWRITEBYTECODE set"
+
+          grep -q "PYTHONUNBUFFERED" Dockerfile \
+            || { echo "[FAIL] PYTHONUNBUFFERED must be set"; exit 1; }
+          echo "  [OK] PYTHONUNBUFFERED set"
+
+          grep -q "EXPOSE 8501" Dockerfile \
+            || { echo "[FAIL] EXPOSE 8501 missing (Streamlit port)"; exit 1; }
+          echo "  [OK] EXPOSE 8501 present"
+
+          grep -q "EXPOSE 8000" Dockerfile \
+            || { echo "[FAIL] EXPOSE 8000 missing (FastAPI port)"; exit 1; }
+          echo "  [OK] EXPOSE 8000 present"
+
+          grep -q "requirements.txt" Dockerfile \
+            || { echo "[FAIL] requirements.txt not referenced in Dockerfile"; exit 1; }
+          echo "  [OK] requirements.txt referenced"
+
+          # Layer-caching check: requirements.txt must appear before COPY . .
+          REQ_POS=$(grep -n "requirements.txt" Dockerfile | head -1 | cut -d: -f1)
+          COPY_POS=$(grep -n "^COPY \. \." Dockerfile | head -1 | cut -d: -f1)
+          if [ -n "$REQ_POS" ] && [ -n "$COPY_POS" ] && [ "$REQ_POS" -ge "$COPY_POS" ]; then
+            echo "[FAIL] requirements.txt COPY must appear before COPY . . for layer caching"
+            exit 1
+          fi
+          echo "  [OK] Layer order is correct (requirements.txt before COPY . .)"
+
+          echo ""
+          echo "Dockerfile sanity check passed."

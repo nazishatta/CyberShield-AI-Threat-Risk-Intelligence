@@ -1,5 +1,7 @@
 # CyberShield AI — Threat Prediction & Cyber Risk Intelligence Platform
 
+[![Python CI](https://github.com/nazishatta/CyberShield-AI-Threat-Risk-Intelligence/actions/workflows/python-ci.yml/badge.svg)](https://github.com/nazishatta/CyberShield-AI-Threat-Risk-Intelligence/actions/workflows/python-ci.yml)
+
 > API-first · storage-light · beginner-friendly · production-grade structure
 
 CyberShield AI fetches vulnerability intelligence **live** from the NVD CVE API and the CISA Known Exploited Vulnerabilities (KEV) catalogue, scores each CVE with a risk model, and surfaces the results in an interactive Streamlit dashboard.
@@ -41,8 +43,8 @@ CISA KEV ──► src/ingestion/kev_client.py  ─┘
 | 7 | Defensive mitigation recommendation layer — priority tiers, SLA guidance, CWE-aware remediation | ✅ Done |
 | 8 | FastAPI defensive scoring API — /health, /version, /score, /recommend | ✅ Done |
 | 9 | Docker and deployment hardening — Dockerfile, .dockerignore, deployment guide | ✅ Done |
-| 10 | CVSS trend analysis & time-series plots | Planned |
-| 11 | GitHub Actions CI/CD pipeline | Planned |
+| 10 | GitHub Actions CI/CD hardening — workflow, secret hygiene, Dockerfile check | ✅ Done |
+| 11 | CVSS trend analysis & time-series plots | Planned |
 
 ---
 
@@ -145,6 +147,7 @@ Full details including field mapping and API key setup: [docs/data_sources.md](d
 | [docs/deployment_guide.md](docs/deployment_guide.md) | Docker build/run commands, local setup, troubleshooting, security notes |
 | [docs/mitigation_guidance.md](docs/mitigation_guidance.md) | Defensive mitigation layer — priority tiers, CWE guidance, SLA recommendations |
 | [docs/responsible_use.md](docs/responsible_use.md) | Ethical use, model disclaimer, API guidelines |
+| [.github/workflows/python-ci.yml](.github/workflows/python-ci.yml) | GitHub Actions CI — test runner, secret hygiene, Dockerfile check |
 
 ---
 
@@ -224,6 +227,24 @@ docker run --rm -p 8501:8501 -e NVD_API_KEY=your-key-here cybershield-ai
 ```
 
 Full deployment documentation: [docs/deployment_guide.md](docs/deployment_guide.md)
+
+---
+
+## CI/CD (Milestone 10)
+
+GitHub Actions runs automatically on every push and pull request to `main`.
+
+### What the pipeline checks
+
+| Job | Description |
+|---|---|
+| **Test (Python 3.11)** | Installs dependencies and runs `pytest tests/ -v` — no real API calls, no dataset downloads |
+| **Secret hygiene scan** | Verifies `.env` is not committed; scans tracked files for `KEY=<real-value>` patterns |
+| **Dockerfile sanity check** | Confirms base image, ENV vars, port declarations, and layer order are correct |
+
+Workflow file: [.github/workflows/python-ci.yml](.github/workflows/python-ci.yml)
+
+Full details: [docs/deployment_guide.md](docs/deployment_guide.md)
 
 ---
 
