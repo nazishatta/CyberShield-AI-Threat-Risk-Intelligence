@@ -1,17 +1,18 @@
-# CyberShield AI — Threat Prediction & Cyber Risk Intelligence Platform
+# CyberShield AI — Defensive CVE Risk Intelligence Platform
 
 [![Python CI](https://github.com/nazishatta/CyberShield-AI-Threat-Risk-Intelligence/actions/workflows/python-ci.yml/badge.svg)](https://github.com/nazishatta/CyberShield-AI-Threat-Risk-Intelligence/actions/workflows/python-ci.yml)
 
-> API-first · storage-light · beginner-friendly · production-grade structure
+> API-first · storage-light · defensive CVE risk intelligence · 415 tests · Python 3.11
 
-CyberShield AI fetches vulnerability intelligence **live** from the NVD CVE API and the CISA Known Exploited Vulnerabilities (KEV) catalogue, scores each CVE with a risk model, and surfaces the results in an interactive Streamlit dashboard and a FastAPI REST API.
-No full dataset is ever downloaded locally.
+CyberShield AI is a **defensive CVE risk intelligence platform** built with **Streamlit**, **FastAPI**, **scikit-learn**, **Docker**, and **GitHub Actions**. It fetches vulnerability intelligence **live** from the NVD CVE API and the CISA Known Exploited Vulnerabilities (KEV) catalogue, scores each CVE with a rule-based and ML risk model, and surfaces defensive mitigation recommendations — all without downloading or storing any dataset locally.
+
+**Defensive use only.** This tool helps security teams prioritise patching and understand risk exposure. It provides no exploit instructions, offensive scanning capabilities, or attack guidance of any kind.
 
 ---
 
 ## Project status
 
-**v0.1.0 — Initial release.** All core milestones complete. The project is a functional defensive CVE risk intelligence platform suitable for portfolio demonstration, security research, and internal tooling integration.
+**v0.1.0 — Initial release.** All core milestones complete.
 
 | Component | Status |
 |---|---|
@@ -23,19 +24,17 @@ No full dataset is ever downloaded locally.
 | Streamlit dashboard | ✅ Production-ready |
 | Docker deployment | ✅ Production-ready |
 | GitHub Actions CI | ✅ Active |
-| Test suite | ✅ 327+ tests, zero network calls |
+| Test suite | ✅ 415 tests · zero network calls |
 
 ---
 
 ## What this project is not
 
-This is a **defensive** analysis tool — it prioritises patching, not attacking.
-
 - It does **not** provide exploit code, PoC scripts, or attack instructions.
 - It does **not** scan, probe, or interact with live systems.
 - It does **not** download or store full CVE databases locally.
 - It does **not** include RAG pipelines, LangChain, vector databases, or LLM agents.
-- It does **not** replace professional security assessment — outputs are prioritisation signals.
+- It does **not** replace professional security assessment — outputs are prioritisation signals that require human review.
 
 ---
 
@@ -43,8 +42,8 @@ This is a **defensive** analysis tool — it prioritises patching, not attacking
 
 ```
 NVD API  ──► src/ingestion/nvd_client.py  ─┐
-                                             ├─► src/features/ ─► src/models/ ─► src/recommendations/ ─► src/dashboard/
-CISA KEV ──► src/ingestion/kev_client.py  ─┘
+                                             ├─► src/features/ ─► src/models/ ─► src/recommendations/ ─┬─► src/dashboard/
+CISA KEV ──► src/ingestion/kev_client.py  ─┘                                                           └─► src/api/
 ```
 
 | Layer | What it does |
@@ -52,9 +51,9 @@ CISA KEV ──► src/ingestion/kev_client.py  ─┘
 | **Ingestion** | Paginated live API calls — never stores raw data |
 | **Features** | Parses CVE JSON → flat feature dict → Pandas DataFrame |
 | **Models** | Rule-based scorer + scikit-learn baseline classifier (LogisticRegression / RandomForest) |
-| **Recommendations** | Tier-based defensive mitigation guidance (CRITICAL/HIGH/MEDIUM/LOW priority) |
+| **Recommendations** | Tier-based defensive mitigation guidance (CRITICAL / HIGH / MEDIUM / LOW priority) |
 | **API** | FastAPI REST service — `/score` and `/recommend` endpoints, Pydantic validation |
-| **Dashboard** | Streamlit app with live query, metrics, charts, and recommendations |
+| **Dashboard** | Streamlit app with live query, metrics, charts, and defensive recommendations |
 
 ---
 
@@ -66,10 +65,10 @@ CISA KEV ──► src/ingestion/kev_client.py  ─┘
 | 1 | Repo hardening — docs, .gitignore, architecture guide | ✅ Done |
 | 2 | Production NVD CVE ingestion — keyword, CVE ID, date range, pagination, error handling | ✅ Done |
 | 3 | Production CISA KEV ingestion — typed exceptions, full entry metadata, dashboard date filters | ✅ Done |
-| 4 | Feature engineering — normalized columns, age_days, severity/AV encoding, KEV flag, risk score | ✅ Done |
-| 5 | Baseline ML classifier (scikit-learn) — high_risk label, LogisticRegression / RandomForest, F1 metrics | ✅ Done |
-| 6 | Model evaluation & explainability — confusion matrix, class balance, permutation importance, misleading-accuracy detection | ✅ Done |
-| 6.5 | ML performance hardening — balanced class weights (RF + LR), threshold sweep, recommended threshold (F1 / Recall), confusion matrix at chosen threshold | ✅ Done |
+| 4 | Feature engineering — normalised columns, age_days, severity/AV encoding, KEV flag, risk score | ✅ Done |
+| 5 | Baseline ML classifier — high_risk label, LogisticRegression / RandomForest, F1 metrics | ✅ Done |
+| 6 | Model evaluation & explainability — confusion matrix, class balance, permutation importance | ✅ Done |
+| 6.5 | ML performance hardening — balanced class weights, threshold sweep, recommended threshold | ✅ Done |
 | 7 | Defensive mitigation recommendation layer — priority tiers, SLA guidance, CWE-aware remediation | ✅ Done |
 | 8 | FastAPI defensive scoring API — /health, /version, /score, /recommend | ✅ Done |
 | 9 | Docker and deployment hardening — Dockerfile, .dockerignore, deployment guide | ✅ Done |
@@ -81,13 +80,14 @@ CISA KEV ──► src/ingestion/kev_client.py  ─┘
 
 ## Quick start
 
-### 1 — Clone & create a virtual environment
+### 1 — Clone and create a virtual environment
 
 ```powershell
 git clone https://github.com/<your-username>/CyberShield-AI-Threat-Risk-Intelligence.git
 cd CyberShield-AI-Threat-Risk-Intelligence
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1        # Windows PowerShell
+# source .venv/bin/activate         # macOS / Linux
 pip install -r requirements.txt
 ```
 
@@ -95,64 +95,123 @@ pip install -r requirements.txt
 
 ```powershell
 Copy-Item .env.example .env
-# Open .env and add your NVD_API_KEY (optional but removes rate-limit)
+# Open .env and set NVD_API_KEY (optional — removes rate limiting)
 ```
 
-### 3 — Run the dashboard
+### 3 — Run the Streamlit dashboard
+
+```powershell
+python -m streamlit run src/dashboard/app.py
+```
+
+Open: **http://localhost:8501**
+
+Or use the one-command launcher (Windows):
 
 ```powershell
 .\run_app.ps1
 ```
 
-Or manually:
+### 4 — Run the FastAPI scoring API
 
 ```powershell
-streamlit run src\dashboard\app.py
+python -m uvicorn src.api.main:app --reload
 ```
 
-### 4 — Run tests
+Open: **http://127.0.0.1:8000/docs**
+
+### 5 — Run tests
 
 ```powershell
-pytest tests/ -v --cov=src
+pytest tests/ -v
 ```
+
+All 415 tests pass with no real network calls and no dataset downloads.
 
 ---
 
-## Project structure
+## Repository map
 
 ```
 CyberShield-AI-Threat-Risk-Intelligence/
+│
 ├── src/
-│   ├── ingestion/          # NVD + KEV live API clients
-│   ├── features/           # CVE parser + feature engineering
-│   ├── models/             # Risk scorer + ML classifier
-│   ├── recommendations/    # Defensive mitigation guidance
-│   ├── api/                # FastAPI REST API (M8)
+│   ├── ingestion/          # Live API clients
+│   │   ├── nvd_client.py   #   NVD CVE 2.0 — paginated fetch, rate-limit handling
+│   │   └── kev_client.py   #   CISA KEV — single fetch, O(1) CVE ID lookup
+│   ├── features/           # Feature engineering
+│   │   ├── cve_parser.py   #   NVD JSON → flat feature dict (CVSS v3.1/v3.0/v2 fallback)
+│   │   └── feature_engineering.py  #   list[dict] + KEV IDs → normalised DataFrame
+│   ├── models/             # Risk scoring and ML
+│   │   ├── risk_scorer.py  #   Rule-based 0–100 risk score
+│   │   ├── classifier.py   #   scikit-learn LogisticRegression / RandomForest
+│   │   └── evaluation.py   #   Confusion matrix, threshold sweep, feature importance
+│   ├── recommendations/    # Defensive mitigation layer
+│   │   └── mitigation.py   #   5-tier priority engine (CRITICAL/HIGH/MEDIUM/LOW)
+│   ├── api/                # FastAPI REST service
+│   │   └── main.py         #   /health  /version  /score  /recommend
 │   ├── dashboard/          # Streamlit app
-│   └── utils/              # Config loader, logger
-├── data/
-│   └── samples/            # Tiny fixture files only — git-tracked (< 10 KB)
-│   # data/raw/, data/processed/, data/cache/ are git-IGNORED
+│   │   └── app.py          #   Live query UI, metrics, charts, recommendations
+│   └── utils/              # Shared utilities
+│       ├── config.py       #   config.yaml loader (lru_cache)
+│       └── logger.py       #   Loguru setup
+│
+├── tests/                  # Pytest test suite (no network calls required)
+│   ├── test_nvd_client.py
+│   ├── test_kev_client.py
+│   ├── test_cve_parser.py
+│   ├── test_feature_engineering.py
+│   ├── test_risk_scorer.py
+│   ├── test_classifier.py
+│   ├── test_evaluation.py
+│   ├── test_mitigation.py
+│   ├── test_api.py
+│   ├── test_deployment_docs.py
+│   ├── test_ci_config.py
+│   ├── test_repo_polish.py
+│   └── test_final_docs_polish.py
+│
 ├── docs/
-│   ├── project_architecture.md   # Layer diagram + data flow
-│   ├── data_sources.md           # NVD & CISA KEV API details
-│   └── responsible_use.md        # Ethical use guidelines
-├── reports/
-│   └── figures/            # Generated plots (git-ignored except .gitkeep)
+│   ├── project_architecture.md   # Layer diagram, data flow, configuration
+│   ├── data_sources.md           # NVD + CISA KEV API details, field mapping
+│   ├── modeling.md               # ML classifier, evaluation metrics, threshold tuning
+│   ├── api.md                    # FastAPI endpoint reference, PowerShell examples
+│   ├── deployment_guide.md       # Docker, local setup, CI, troubleshooting
+│   ├── mitigation_guidance.md    # Priority tier logic, CWE guidance, SLA table
+│   ├── responsible_use.md        # Ethical use policy, model disclaimer
+│   ├── roadmap.md                # Completed milestones, future plans, excluded scope
+│   ├── release_notes_v0.1.0.md   # v0.1.0 capabilities, limitations
+│   └── final_review_checklist.md # Pre-release quality checklist
+│
+├── data/
+│   └── samples/            # Tiny fixture files for offline tests (< 10 KB, git-tracked)
+│   # data/raw/, data/processed/, data/cache/ are git-IGNORED — leave empty
+│
+├── .github/
+│   ├── workflows/
+│   │   └── python-ci.yml   # CI: test runner · secret hygiene · Dockerfile check
+│   ├── ISSUE_TEMPLATE/
+│   │   ├── bug_report.md
+│   │   ├── feature_request.md
+│   │   └── documentation_update.md
+│   └── pull_request_template.md
+│
+├── reports/figures/        # Generated plots — git-ignored (only .gitkeep tracked)
 ├── notebooks/              # Exploratory Jupyter notebooks
-├── tests/                  # Pytest unit tests (no network required)
-├── .github/workflows/      # GitHub Actions CI
 ├── config.yaml             # All tunable parameters
-├── .env.example            # Template — copy to .env, never commit .env
-├── requirements.txt
-├── Dockerfile
+├── .env.example            # Secrets template — copy to .env, never commit .env
+├── requirements.txt        # Pinned Python dependencies
+├── Dockerfile              # python:3.11-slim — supports Streamlit and FastAPI
 ├── .dockerignore
+├── CONTRIBUTING.md
+├── SECURITY.md
+├── CHANGELOG.md
 ├── LICENSE
-└── run_app.ps1             # One-command launch (Windows)
+└── run_app.ps1             # One-command Streamlit launcher (Windows)
 ```
 
 > **Storage policy:** `data/raw/`, `data/processed/`, `data/cache/`, and `reports/figures/` are all git-ignored.
-> The project runs entirely from live API calls — **no dataset is ever downloaded locally**.
+> The project runs entirely from live API calls — **no full dataset is ever downloaded locally**.
 
 ---
 
@@ -163,7 +222,7 @@ CyberShield-AI-Threat-Risk-Intelligence/
 | NVD CVE 2.0 API | https://nvd.nist.gov/developers/vulnerabilities | Live paginated HTTP |
 | CISA KEV | https://www.cisa.gov/known-exploited-vulnerabilities-catalog | Live JSON fetch |
 
-Full details including field mapping and API key setup: [docs/data_sources.md](docs/data_sources.md)
+Full details including field mapping, rate limits, and storage design: [docs/data_sources.md](docs/data_sources.md)
 
 ---
 
@@ -171,30 +230,29 @@ Full details including field mapping and API key setup: [docs/data_sources.md](d
 
 | Doc | Contents |
 |---|---|
-| [docs/project_architecture.md](docs/project_architecture.md) | Layer diagram, data flow, how to add a new source |
-| [docs/data_sources.md](docs/data_sources.md) | NVD + CISA KEV API details, field mapping, storage policy |
-| [docs/modeling.md](docs/modeling.md) | Baseline ML classifier — features, evaluation metrics, class imbalance, feature importance, limitations |
+| [docs/project_architecture.md](docs/project_architecture.md) | Layer diagram, data flow, configuration guide, how to add a new source |
+| [docs/data_sources.md](docs/data_sources.md) | NVD + CISA KEV API details, field mapping, storage-light design |
+| [docs/modeling.md](docs/modeling.md) | ML classifier — features, evaluation metrics, threshold tuning, class imbalance, limitations |
 | [docs/api.md](docs/api.md) | FastAPI REST API — endpoints, request/response schemas, PowerShell examples |
-| [docs/deployment_guide.md](docs/deployment_guide.md) | Docker build/run commands, local setup, troubleshooting, security notes |
-| [docs/mitigation_guidance.md](docs/mitigation_guidance.md) | Defensive mitigation layer — priority tiers, CWE guidance, SLA recommendations |
-| [docs/responsible_use.md](docs/responsible_use.md) | Ethical use, model disclaimer, API guidelines |
+| [docs/deployment_guide.md](docs/deployment_guide.md) | Docker build/run, local setup, GitHub Actions CI, troubleshooting |
+| [docs/mitigation_guidance.md](docs/mitigation_guidance.md) | Defensive mitigation layer — priority tiers, CWE guidance, SLA table |
+| [docs/responsible_use.md](docs/responsible_use.md) | Ethical use policy, model output disclaimer, API guidelines |
 | [docs/roadmap.md](docs/roadmap.md) | Completed milestones, future plans, explicitly excluded scope |
-| [docs/release_notes_v0.1.0.md](docs/release_notes_v0.1.0.md) | v0.1.0 release summary, capabilities, limitations |
-| [.github/workflows/python-ci.yml](.github/workflows/python-ci.yml) | GitHub Actions CI — test runner, secret hygiene, Dockerfile check |
+| [docs/release_notes_v0.1.0.md](docs/release_notes_v0.1.0.md) | v0.1.0 release summary, capabilities, known limitations |
 
 ### Governance
 
 | File | Contents |
 |---|---|
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Setup guide, defensive-use policy, PR checklist |
-| [SECURITY.md](SECURITY.md) | Responsible disclosure policy, reporting instructions |
-| [CHANGELOG.md](CHANGELOG.md) | Milestone-by-milestone history |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Setup guide, defensive-use policy, PR checklist, out-of-scope table |
+| [SECURITY.md](SECURITY.md) | Responsible disclosure policy, private reporting instructions |
+| [CHANGELOG.md](CHANGELOG.md) | Milestone-by-milestone change history |
 
 ---
 
-## API usage (Milestone 8)
+## API usage
 
-The FastAPI defensive scoring API runs alongside the dashboard and requires no dataset downloads.
+The FastAPI defensive scoring API exposes the same risk scoring and mitigation logic as the dashboard via JSON REST endpoints. It makes no upstream API calls and downloads no data.
 
 ### Start the API server
 
@@ -202,7 +260,7 @@ The FastAPI defensive scoring API runs alongside the dashboard and requires no d
 python -m uvicorn src.api.main:app --reload
 ```
 
-Interactive docs open at **http://127.0.0.1:8000/docs**
+Interactive Swagger docs: **http://127.0.0.1:8000/docs**
 
 ### Score a CVE (PowerShell)
 
@@ -223,7 +281,7 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8000/score" `
                   -Body $body
 ```
 
-### Get a mitigation recommendation (PowerShell)
+### Get a defensive mitigation recommendation (PowerShell)
 
 ```powershell
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/recommend" `
@@ -232,11 +290,11 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8000/recommend" `
                   -Body $body
 ```
 
-Full endpoint documentation: [docs/api.md](docs/api.md)
+Full endpoint reference: [docs/api.md](docs/api.md)
 
 ---
 
-## Docker (Milestone 9)
+## Docker
 
 ### Build
 
@@ -252,7 +310,7 @@ docker run --rm -p 8501:8501 cybershield-ai
 
 Open: **http://localhost:8501**
 
-### Run the FastAPI API
+### Run the FastAPI API (command override — same image)
 
 ```bash
 docker run --rm -p 8000:8000 cybershield-ai \
@@ -267,45 +325,41 @@ Open: **http://localhost:8000/docs**
 docker run --rm -p 8501:8501 -e NVD_API_KEY=your-key-here cybershield-ai
 ```
 
-Full deployment documentation: [docs/deployment_guide.md](docs/deployment_guide.md)
+Full deployment guide: [docs/deployment_guide.md](docs/deployment_guide.md)
 
 ---
 
-## CI/CD (Milestone 10)
+## CI/CD
 
 GitHub Actions runs automatically on every push and pull request to `main`.
 
-### What the pipeline checks
-
-| Job | Description |
+| Job | What it checks |
 |---|---|
-| **Test (Python 3.11)** | Installs dependencies and runs `pytest tests/ -v` — no real API calls, no dataset downloads |
+| **Test (Python 3.11)** | `pytest tests/ -v` — no real API calls, no dataset downloads, `NVD_API_KEY` intentionally unset |
 | **Secret hygiene scan** | Verifies `.env` is not committed; scans tracked files for `KEY=<real-value>` patterns |
-| **Dockerfile sanity check** | Confirms base image, ENV vars, port declarations, and layer order are correct |
+| **Dockerfile sanity check** | Validates base image, ENV vars, port declarations, and layer order — no Docker daemon needed |
 
-Workflow file: [.github/workflows/python-ci.yml](.github/workflows/python-ci.yml)
-
-Full details: [docs/deployment_guide.md](docs/deployment_guide.md)
+Workflow: [.github/workflows/python-ci.yml](.github/workflows/python-ci.yml)
 
 ---
 
 ## Security notes
 
-- **Never commit `.env`** — it is git-ignored.
+- **Never commit `.env`** — it is git-ignored. Use `.env.example` as the template.
 - API keys are read from environment variables via `python-dotenv`.
-- `data/raw/` and `data/processed/` are git-ignored.
-- The CI workflow includes an automated secret hygiene scan on every push.
-- To report a security vulnerability, see [SECURITY.md](SECURITY.md).
+- `data/raw/` and `data/processed/` are git-ignored and excluded from the Docker image.
+- The CI pipeline runs an automated secret hygiene scan on every push.
+- To report a security vulnerability privately: [SECURITY.md](SECURITY.md).
 
 ---
 
 ## Contributing
 
-Contributions are welcome for defensive features, documentation improvements, and test coverage. Before opening a pull request please read [CONTRIBUTING.md](CONTRIBUTING.md) for the setup guide, coding guidelines, and the PR checklist.
+Contributions are welcome for defensive features, documentation improvements, and test coverage. Read [CONTRIBUTING.md](CONTRIBUTING.md) for the setup guide, coding guidelines, and PR checklist before opening a pull request.
 
 Bug reports and feature requests: [GitHub Issues](https://github.com/nazishatta/CyberShield-AI-Threat-Risk-Intelligence/issues)
 
-Security vulnerabilities: see [SECURITY.md](SECURITY.md) — please do not report them through public issues.
+Security vulnerabilities: see [SECURITY.md](SECURITY.md) — do not report them through public issues.
 
 ---
 
