@@ -4,8 +4,38 @@
 
 > API-first · storage-light · beginner-friendly · production-grade structure
 
-CyberShield AI fetches vulnerability intelligence **live** from the NVD CVE API and the CISA Known Exploited Vulnerabilities (KEV) catalogue, scores each CVE with a risk model, and surfaces the results in an interactive Streamlit dashboard.
+CyberShield AI fetches vulnerability intelligence **live** from the NVD CVE API and the CISA Known Exploited Vulnerabilities (KEV) catalogue, scores each CVE with a risk model, and surfaces the results in an interactive Streamlit dashboard and a FastAPI REST API.
 No full dataset is ever downloaded locally.
+
+---
+
+## Project status
+
+**v0.1.0 — Initial release.** All core milestones complete. The project is a functional defensive CVE risk intelligence platform suitable for portfolio demonstration, security research, and internal tooling integration.
+
+| Component | Status |
+|---|---|
+| NVD + CISA KEV live ingestion | ✅ Production-ready |
+| Feature engineering + risk scorer | ✅ Production-ready |
+| ML baseline classifier | ✅ Functional (synthetic training data) |
+| Defensive mitigation recommendations | ✅ Production-ready |
+| FastAPI REST API | ✅ Production-ready |
+| Streamlit dashboard | ✅ Production-ready |
+| Docker deployment | ✅ Production-ready |
+| GitHub Actions CI | ✅ Active |
+| Test suite | ✅ 327+ tests, zero network calls |
+
+---
+
+## What this project is not
+
+This is a **defensive** analysis tool — it prioritises patching, not attacking.
+
+- It does **not** provide exploit code, PoC scripts, or attack instructions.
+- It does **not** scan, probe, or interact with live systems.
+- It does **not** download or store full CVE databases locally.
+- It does **not** include RAG pipelines, LangChain, vector databases, or LLM agents.
+- It does **not** replace professional security assessment — outputs are prioritisation signals.
 
 ---
 
@@ -44,7 +74,8 @@ CISA KEV ──► src/ingestion/kev_client.py  ─┘
 | 8 | FastAPI defensive scoring API — /health, /version, /score, /recommend | ✅ Done |
 | 9 | Docker and deployment hardening — Dockerfile, .dockerignore, deployment guide | ✅ Done |
 | 10 | GitHub Actions CI/CD hardening — workflow, secret hygiene, Dockerfile check | ✅ Done |
-| 11 | CVSS trend analysis & time-series plots | Planned |
+| 11 | Repository polish — governance files, issue templates, PR template, release notes | ✅ Done |
+| 12 | CVSS trend analysis & time-series plots | Planned |
 
 ---
 
@@ -147,7 +178,17 @@ Full details including field mapping and API key setup: [docs/data_sources.md](d
 | [docs/deployment_guide.md](docs/deployment_guide.md) | Docker build/run commands, local setup, troubleshooting, security notes |
 | [docs/mitigation_guidance.md](docs/mitigation_guidance.md) | Defensive mitigation layer — priority tiers, CWE guidance, SLA recommendations |
 | [docs/responsible_use.md](docs/responsible_use.md) | Ethical use, model disclaimer, API guidelines |
+| [docs/roadmap.md](docs/roadmap.md) | Completed milestones, future plans, explicitly excluded scope |
+| [docs/release_notes_v0.1.0.md](docs/release_notes_v0.1.0.md) | v0.1.0 release summary, capabilities, limitations |
 | [.github/workflows/python-ci.yml](.github/workflows/python-ci.yml) | GitHub Actions CI — test runner, secret hygiene, Dockerfile check |
+
+### Governance
+
+| File | Contents |
+|---|---|
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Setup guide, defensive-use policy, PR checklist |
+| [SECURITY.md](SECURITY.md) | Responsible disclosure policy, reporting instructions |
+| [CHANGELOG.md](CHANGELOG.md) | Milestone-by-milestone history |
 
 ---
 
@@ -253,7 +294,26 @@ Full details: [docs/deployment_guide.md](docs/deployment_guide.md)
 - **Never commit `.env`** — it is git-ignored.
 - API keys are read from environment variables via `python-dotenv`.
 - `data/raw/` and `data/processed/` are git-ignored.
-- The CI workflow includes a basic secret scan on `.env.example`.
+- The CI workflow includes an automated secret hygiene scan on every push.
+- To report a security vulnerability, see [SECURITY.md](SECURITY.md).
+
+---
+
+## Contributing
+
+Contributions are welcome for defensive features, documentation improvements, and test coverage. Before opening a pull request please read [CONTRIBUTING.md](CONTRIBUTING.md) for the setup guide, coding guidelines, and the PR checklist.
+
+Bug reports and feature requests: [GitHub Issues](https://github.com/nazishatta/CyberShield-AI-Threat-Risk-Intelligence/issues)
+
+Security vulnerabilities: see [SECURITY.md](SECURITY.md) — please do not report them through public issues.
+
+---
+
+## Release notes
+
+[v0.1.0 release notes](docs/release_notes_v0.1.0.md) — capabilities, run instructions, known limitations.
+
+[Full changelog](CHANGELOG.md) — milestone-by-milestone history.
 
 ---
 
