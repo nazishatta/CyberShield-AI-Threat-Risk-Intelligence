@@ -1,17 +1,65 @@
+# ── Version control ───────────────────────────────────────────────────────────
+.git/
+.github/
+
+# ── Virtual environments ──────────────────────────────────────────────────────
 .venv/
 venv/
 env/
+ENV/
+
+# ── Python bytecode ───────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# ── Secrets — never copy into the image ──────────────────────────────────────
 .env
+
+# ── Data — never copy raw or bulk datasets ───────────────────────────────────
+# data/samples/ IS included (tiny git-tracked fixtures only)
 data/raw/
 data/processed/
 data/cache/
-models/
+
+# ── Model artefacts ───────────────────────────────────────────────────────────
+# Leading slash anchors /models/ to repo root only
+/models/
+*.pkl
+*.joblib
+*.h5
+*.onnx
+*.safetensors
+*.npy
+*.npz
+*.pt
+*.pth
+
+# ── Reports / generated figures ───────────────────────────────────────────────
+reports/figures/*.png
+reports/figures/*.jpg
+reports/figures/*.jpeg
+reports/figures/*.svg
+reports/figures/*.pdf
+reports/figures/*.html
+
+# ── Notebooks ─────────────────────────────────────────────────────────────────
+notebooks/.ipynb_checkpoints/
+
+# ── Logs / test artefacts ─────────────────────────────────────────────────────
 logs/
-.git/
-.github/
 *.log
 .coverage
 htmlcov/
 .pytest_cache/
+
+# ── Tool caches ───────────────────────────────────────────────────────────────
+.mypy_cache/
+.ruff_cache/
+
+# ── IDE / OS noise ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -40,8 +40,9 @@ CISA KEV ──► src/ingestion/kev_client.py  ─┘
 | 6.5 | ML performance hardening — balanced class weights (RF + LR), threshold sweep, recommended threshold (F1 / Recall), confusion matrix at chosen threshold | ✅ Done |
 | 7 | Defensive mitigation recommendation layer — priority tiers, SLA guidance, CWE-aware remediation | ✅ Done |
 | 8 | FastAPI defensive scoring API — /health, /version, /score, /recommend | ✅ Done |
-| 9 | CVSS trend analysis & time-series plots | Planned |
-| 10 | Docker deployment + GitHub Actions full CI/CD | Planned |
+| 9 | Docker and deployment hardening — Dockerfile, .dockerignore, deployment guide | ✅ Done |
+| 10 | CVSS trend analysis & time-series plots | Planned |
+| 11 | GitHub Actions CI/CD pipeline | Planned |
 
 ---
 
@@ -141,6 +142,7 @@ Full details including field mapping and API key setup: [docs/data_sources.md](d
 | [docs/data_sources.md](docs/data_sources.md) | NVD + CISA KEV API details, field mapping, storage policy |
 | [docs/modeling.md](docs/modeling.md) | Baseline ML classifier — features, evaluation metrics, class imbalance, feature importance, limitations |
 | [docs/api.md](docs/api.md) | FastAPI REST API — endpoints, request/response schemas, PowerShell examples |
+| [docs/deployment_guide.md](docs/deployment_guide.md) | Docker build/run commands, local setup, troubleshooting, security notes |
 | [docs/mitigation_guidance.md](docs/mitigation_guidance.md) | Defensive mitigation layer — priority tiers, CWE guidance, SLA recommendations |
 | [docs/responsible_use.md](docs/responsible_use.md) | Ethical use, model disclaimer, API guidelines |
 
@@ -187,6 +189,41 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8000/recommend" `
 ```
 
 Full endpoint documentation: [docs/api.md](docs/api.md)
+
+---
+
+## Docker (Milestone 9)
+
+### Build
+
+```bash
+docker build -t cybershield-ai .
+```
+
+### Run the Streamlit dashboard
+
+```bash
+docker run --rm -p 8501:8501 cybershield-ai
+```
+
+Open: **http://localhost:8501**
+
+### Run the FastAPI API
+
+```bash
+docker run --rm -p 8000:8000 cybershield-ai \
+  python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+```
+
+Open: **http://localhost:8000/docs**
+
+### Pass your NVD API key (optional)
+
+```bash
+docker run --rm -p 8501:8501 -e NVD_API_KEY=your-key-here cybershield-ai
+```
+
+Full deployment documentation: [docs/deployment_guide.md](docs/deployment_guide.md)
 
 ---
 
