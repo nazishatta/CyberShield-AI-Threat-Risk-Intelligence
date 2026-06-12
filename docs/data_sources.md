@@ -188,9 +188,16 @@ All data is fetched live at runtime.
 
 ---
 
-## Future sources (planned)
+## Potential future sources
 
-| Source | Milestone | What it adds |
-|---|---|---|
-| MITRE ATT&CK STIX | M4 | Tactic/technique mapping for CVEs |
-| Shodan InternetDB | M5 | Exposed service counts per CVE technology |
+The following data sources could complement the existing NVD + CISA KEV feeds.
+None are committed — all would need to remain storage-light (in-memory, no local bulk files).
+
+| Source | What it would add |
+|---|---|
+| NVD EPSS scores | Exploit prediction probability as an additional feature column |
+| CISA BOD 22-01 deadlines | Federal patching deadline surfaced in recommendations |
+| MITRE ATT&CK (STIX) | Tactic/technique mapping for CVEs (in-memory STIX bundle fetch) |
+
+Any new source must be fetched live via API — bulk dataset downloads are explicitly excluded.
+See [docs/roadmap.md](roadmap.md) for the full list of excluded scope.
